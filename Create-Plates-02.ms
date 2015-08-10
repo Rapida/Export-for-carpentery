@@ -1,5 +1,5 @@
-theObj = $'A'
-thicknes = -1.7
+theObj = $'B'
+thicknes = 1.7
 baseName = theObj.name
 fn iniPos obj po = 
 (
@@ -180,6 +180,7 @@ for i = 1 to faceCount do
 	meshName = uniqueName (baseName +"-"+ ( i  as string ) + "-")
 	meshFases = if polygonVerts[1].count == 4 then #([1,2,3],[1,3,4]) else #([1,2,3])
 	theMesh = editable_mesh name:meshName pos:(polyop.getFaceCenter theObj i) dir:(polyop.getFaceNormal theObj i) vertexTicks:on wireColor:blue
+	meshPos = theMesh.transform
 	for i = 1 to polygonVerts[2].count do 
 	(
 		newVert = addVert theMesh

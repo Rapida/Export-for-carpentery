@@ -1,5 +1,5 @@
-theObj = $'A'
-thicknes = -1.7
+theObj = $
+thicknes = 1.7
 baseName = theObj.name
 fn iniPos obj po = 
 (
@@ -38,13 +38,9 @@ fn planerFn inArr =
 	xb = c2.x; yb = c2.y; zb = c2.z;
 	xc = c3.x; yc = c3.y; zc = c3.z;
 	a1 = -xa; a2 = -ya; a3 = -za;
--- 	format " % % % \n" a1 a2 a3
 	b1 = xb-xa; b2 = yb-ya; b3 = zb-za;
--- 	format " % % % \n" b1 b2 b3
 	d1 = xc-xa; d2 = yc-ya; d3 = zc-za;
--- 	format " % % % \n" d1 d2 d3
 	ql1 = b2*d3 - b3*d2; ql2 = -(b1*d3 - b3*d1); ql3 = b1*d2 - b2*d1; 
--- 	format " % % % \n" ql1 ql2 ql3
 	ds1 = ql1*a1; ds2 = ql2*a2; ds3 = ql3*a3;
 	f1 = (ds1)+(ds2)+(ds3)
 	#(ql1, ql2, ql3, f1)
@@ -87,6 +83,11 @@ fn findFuckingPoint c1 c2 c3 =
 		x = ux*t0 + c2.x; y = uy*t0 + c2.y; z = uz*t0 + c2.z;
 		p = [x,y,z]
 	)
+fn findMidlePlane v c3 =
+(
+	D = v.x*(-c3.x)+v.y*(-c3.y)+v.z*(-c3.z)
+	#(v.x, v.y, v.z, D)
+)
 fn findIntersectionPoint plArr = 
 (
 	fn sortFunc inArr =
@@ -102,7 +103,6 @@ fn findIntersectionPoint plArr =
 		sortArr
 	)
 	sortedArr = sortFunc plArr
-	format "%\n" sortedArr
 	fn plIntersect inArr sortArr =
 	(
 		result = #()
@@ -113,38 +113,28 @@ fn findIntersectionPoint plArr =
 			(
 				h = inArr[n]
 				append fnIn h
-	-- 			format "%: %\n" n h
 			)
-	-- 		print (fnIn as string)
 			a1 = fnIn[1][1]; b1 = fnIn[1][2]; c1 = fnIn[1][3]; s1 = -fnIn[1][4];
 			a2 = fnIn[2][1]; b2 = fnIn[2][2]; c2 = fnIn[2][3]; s2 = -fnIn[2][4]; 
 			a3 = fnIn[3][1]; b3 = fnIn[3][2]; c3 = fnIn[3][3]; s3 = -fnIn[3][4]; 
-	-- 		format "% % % %\n" a1 b1 c1 s1
-	-- 		format "% % % %\n" a2 b2 c2 s2
-	-- 		format "% % % %\n" a3 b3 c3 s3
 			D = a1*b2*c3 + a3*b1*c2+a2*b3*c1-a3*b2*c1-a1*b3*c2-a2*b1*c3
-	-- 		print (D == 0.0)
 			if D != 0.0 then
 			(
 				D1 = s1*b2*c3 + s3*b1*c2+s2*b3*c1-s3*b2*c1-s1*b3*c2-s2*b1*c3
 				D2 = a1*s2*c3 + a3*s1*c2+a2*s3*c1-a3*s2*c1-a1*s3*c2-a2*s1*c3
 				D3 = a1*b2*s3 + a3*b1*s2+a2*b3*s1-a3*b2*s1-a1*b3*s2-a2*b1*s3
 				fx = D1/D; fy = D2/D; fz = D3/D;
-	-- 			format "D = % D1 = % D2 = % D3 = %\n" D D1 D2 D3
 				fin = [fx, fy, fz]
--- 				print fin
 				append result fin
 				te1 = a1*fx+b1*fy+c1*fz
 				te2 = a2*fx+b2*fy+c2*fz
 				te3 = a3*fx+b3*fy+c3*fz
-	-- 			format " % \n % \n % \n" te1 te2 te3
 			)
 		)
 		result
 	)
 
 	intArr = plIntersect plArr sortedArr
--- 	for i in intArr do point pos:i size:0.1
 	result = intArr
 )
 fn faceSort v1 v2 =
@@ -167,6 +157,46 @@ fn faceSort v1 v2 =
 	append result n
 	result
 )
+fn bissect b c a = 
+(
+	AB = [b.x - a.x, b.y - a.y, b.z - a.z]
+	AC = [c.x - a.x, c.y - a.y, c.z - a.z]
+	L = length AB / length AC
+	d = [0,0,0]
+	d.x = (b.x + L * c.x)/ (1 + L)
+	d.y = (b.y + L * c.y)/ (1 + L)
+	d.z = (b.z + L * c.z)/ (1 + L)
+	d
+)
+fn planeBy2Points p1 p2 = 
+(
+	n = p1p2 = [p2.x-p1.x, p2.y-p1.y, p2.z-p1.z]
+	a = p1
+	D = -(a.x*n.x)-(a.y*n.y)-(a.z*n.z)
+	pl = #(n.x, n.y, n.z, D)
+)
+fn pointProjectionOnPlane po pl = 
+(
+	plx = pl[1]; ply = pl[2]; plz = pl[3]; pld = pl[4];
+	plN = [plx,ply,plz]; zn = [1,1,1];
+	if plx == 0 then zn.x = 0
+	if ply == 0 then zn.y = 0
+	if plz == 0 then zn.z = 0
+	f1x =(-po.x*plx*zn.x); f1y = (-po.y*ply)*zn.y; f1z = (-po.z*plz)*zn.z;
+	f1 = pld - f1x - f1y - f1z
+	f2 = plx*plN.x + ply*plN.y +plz*plN.z
+	t = -f1/f2
+	x = t*plN.x-(-po.x); y = t*plN.y-(-po.y); z = t*plN.z-(-po.z);
+	[x,y,z]
+)
+fn lookForAngle edgeCenter faceCenter1 faceCenter2 edgeEnd = 
+(
+	intersectPlane = planeBy2Points edgeCenter edgeEnd
+	projection1 = pointProjectionOnPlane faceCenter1 intersectPlane
+	projection2 = pointProjectionOnPlane faceCenter2 intersectPlane
+	result = bissect projection1 projection2 edgeCenter
+)
+
 -- END OF FUNCTIONS --
 
 faceCount = polyop.getNumFaces theObj
@@ -174,24 +204,26 @@ meshesArr = #()
 for i = 1 to faceCount do
 (
 	format "Im work on % face\n" i
-	meshPos = iniPos theObj i
 	polygonVerts = getVerts theObj i
 	polyEdges = getEdges theObj i
 	meshName = uniqueName (baseName +"-"+ ( i  as string ) + "-")
 	meshFases = if polygonVerts[1].count == 4 then #([1,2,3],[1,3,4]) else #([1,2,3])
-	theMesh = editable_mesh name:meshName pos:(polyop.getFaceCenter theObj i) dir:(polyop.getFaceNormal theObj i) vertexTicks:on wireColor:blue
+	theMesh = editable_mesh name:meshName pos:(polyop.getFaceCenter theObj i) dir:(polyop.getFaceNormal theObj i) vertexTicks:on wireColor:red
+	meshPos = theMesh.transform
 	for i = 1 to polygonVerts[2].count do 
 	(
 		newVert = addVert theMesh
 		meshop.setVert theMesh newVert polygonVerts[2][i]
 	)
 	setNumFaces theMesh meshFases.count
-	for i = 1 to meshFases.count do setFace theMesh i meshFases[i]
-	newVert = addVert theMesh
-	in coordsys meshPos meshop.moveVert theMesh newVert [0.0,0.0,-thicknes]
-	in coordsys world newPoint = getVert theMesh newVert
--- 	format "newCenter: %\n" newPoint
-	deleteVert theMesh newVert
+	convertTo theMesh Editable_Poly
+	nu = polyop.getNumVerts theMesh
+	firstFace = for i = 1 to nu collect i
+	polyop.createPolygon theMesh firstFace
+	cVert = polyop.createVert theMesh (polyop.getFaceCenter theObj i)
+	in coordsys meshPos polyop.moveVert theMesh cVert [0.0,0.0,-thicknes]
+	in coordsys world newPoint = polyop.getVert theMesh cVert
+	polyop.deleteVerts theMesh cVert
 	newMeshVertsArr = #()
 	plansArr = #()
 	for ed = 1 to polyEdges[1].count do
@@ -199,67 +231,54 @@ for i = 1 to faceCount do
 		if polyEdges[2][ed].count == 1 then
 		(
 			vArr = polyEdges[4][ed] -- this Array have two verteces of source poly
-			center = edgeCenter vArr
-			newVert = addVert theMesh
-			meshop.setVert theMesh newVert center
-			in coordsys meshPos meshop.moveVert theMesh newVert [0.0,0.0,-thicknes]
-				newCoord = getVert theMesh newVert
+			center = edgeCenter vArr 
+			newVert = polyop.createVert theMesh center
+			in coordsys meshPos polyop.moveVert theMesh newVert [0.0,0.0,-thicknes]
+				newCoord = polyop.getVert theMesh newVert
 			append vArr newCoord
--- 			format "#(%, %, %)\n" vArr[1] vArr[2] vArr[3]
 			localPlane = planerFn vArr
-			deleteVert theMesh newVert
+			polyop.deleteVerts theMesh newVert
 			append plansArr localPlane
--- 			format"pl%% = %\n" i ed localPlane
--- 			format "side open face: (%x) + (%y) + (%z) + (%)\n" localPlane[1] localPlane[2] localPlane[3] localPlane[4] 
 		)
 		else
 		(
-			newVert = addVert theMesh
-			meshop.setVert theMesh newVert (edgeCenter (polyEdges[4][ed]))
+			newVert = polyop.createVert theMesh (edgeCenter (polyEdges[4][ed]))
 			vArr = for p in polyEdges[2][ed] collect (polyop.getFaceCenter theObj p)
-			center = findFuckingPoint vArr[1] vArr[2] (getVert theMesh newVert)
+				newCoord = polyop.getVert theMesh newVert
+				faceCenter1 = vArr[1]
+				faceCenter2 = vArr[2]
+			center = bissect vArr[1] vArr[2] newCoord -- ***???
 			vArr = polyEdges[4][ed]
-			meshop.setVert theMesh newVert center
-				newCoord = getVert theMesh newVert
-			append vArr newCoord
+				edgeEnd = vArr[1]
+				edgeCenterC = newCoord
+				Ncenter = lookForAngle edgeCenterC faceCenter1 faceCenter2 edgeEnd
+			polyop.setVert theMesh newVert Ncenter
+				newCoord = polyop.getVert theMesh newVert
+				format "Vert =  %\n" newVert
+				polyop.deleteVerts theMesh newVert
+			append vArr newCoord --
 			localPlane = planerFn vArr
-			deleteVert theMesh newVert
 			append plansArr localPlane
--- 			format"pl%% = %\n" i ed localPlane
--- 			format "side closed face: (%x) + (%y) + (%z) + (%)\n" localPlane[1] localPlane[2] localPlane[3] localPlane[4] 
+				free faces
 		)
 	)
 	backP = planerFn polygonVerts[2] 
--- 	format "backP = %\nverts = %\n" backP polygonVerts[2]
 	backPlane = parraPlane backP newPoint
 	append plansArr backPlane
 	newPointsArr = findIntersectionPoint plansArr
 	newFaceVertsArr = #()
--- 	format "%\n" newPointsArr
-	convertTo theMesh Editable_Poly
 	fNum = polyop.getNumFaces theMesh
 	oldFaceVertsArr = polyop.getFaceVerts theMesh 1
-	format "v1 = %\n" oldFaceVertsArr
 	for i in newPointsArr do
 	(
 		v = polyop.createVert theMesh i
 		append newFaceVertsArr v
 	)
-	format "v2 = %\n" newFaceVertsArr
 	newFaces = faceSort oldFaceVertsArr newFaceVertsArr
-	format "v3= %\n" newFaces
 	for i in newFaces do
 	(
 		polyop.createPolygon theMesh i
 	)
 	polyop.capHolesByVert theMesh newFaceVertsArr
--- 	newTest = for i = 1 to newFaceVertsArr.count collect newFaceVertsArr[i]
--- 		format "%\n" newTest
--- 	newP = polyop.createPolygon theMesh newTest
--- 	polyop.retriangulate theMesh #(1,2)
--- 	polyop.flipNormals theMesh #(1,2)
--- 	format"pl%% = %\n" i "b" backPlane
--- 	format "backface: (%x) + (%y) + (%z) + (%)\n" backPlane[1] backPlane[2] backPlane[3] backPlane[4]
--- 	format " - div - \n " 
 	appendIfUnique meshesArr theMesh
 )
