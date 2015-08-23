@@ -12,14 +12,12 @@ fn iniPos obj po =
 )
 fn getVerts obj po =
 (
-	meshPos = iniPos obj po
 	verts = polyop.getFaceVerts obj po
 	vertsPos = for i in verts collect polyop.getVert obj i
 	result = #(verts,vertsPos)
 )
 fn getEdges obj po =
 (
-	meshPos = iniPos obj po
 	edges = polyop.getFaceEdges obj po
 	edgeVerts = for i in edges collect polyop.getEdgeVerts obj i
 	vertsPos = #()
@@ -196,12 +194,27 @@ fn lookForAngle edgeCenter faceCenter1 faceCenter2 edgeEnd =
 	projection2 = pointProjectionOnPlane faceCenter2 intersectPlane
 	result = bissect projection1 projection2 edgeCenter
 )
+fn kollvectors _v1 _v2 =
+(
+	a = _v1; b = _v2;
+	skol = a.x * b.x + a.y * b.y +a.z * b.z
+	ad = a.x^2 + a.y^2 + a.z^2
+	bd = b.x^2 + b.y^2 + b.z^2
+	ad = ad^0.5; bd = bd^0.5;
+	d = (skol/(ad*bd))
+	acos d == 0.0
+)
 
 -- END OF FUNCTIONS --
 
 faceCount = polyop.getNumFaces theObj
 meshesArr = #()
-for i = 1 to faceCount do
+selBitArr =  polyop.getFaceSelection theObj
+startPoly = 1
+endPoly = polyop.getNumFaces theObj
+polyBitArr = #{startPoly..endPoly}
+polyToDo = polyBitArr - selBitArr
+for i in polyToDo do
 (
 	format "Im work on % face\n" i
 	polygonVerts = getVerts theObj i
@@ -219,13 +232,17 @@ for i = 1 to faceCount do
 	convertTo theMesh Editable_Poly
 	nu = polyop.getNumVerts theMesh
 	firstFace = for i = 1 to nu collect i
-	polyop.createPolygon theMesh firstFace
+		facesArr = #{}
+	firstFaceNum = polyop.createPolygon theMesh firstFace
+	append facesArr firstFaceNum
+	polyop.setFaceMatID theMesh firstFaceNum 1
 	cVert = polyop.createVert theMesh (polyop.getFaceCenter theObj i)
 	in coordsys meshPos polyop.moveVert theMesh cVert [0.0,0.0,-thicknes]
 	in coordsys world newPoint = polyop.getVert theMesh cVert
 	polyop.deleteVerts theMesh cVert
 	newMeshVertsArr = #()
 	plansArr = #()
+	marker = true
 	for ed = 1 to polyEdges[1].count do
 	(
 		if polyEdges[2][ed].count == 1 then
@@ -243,20 +260,36 @@ for i = 1 to faceCount do
 		else
 		(
 			newVert = polyop.createVert theMesh (edgeCenter (polyEdges[4][ed]))
+			vectorsArr = for i in polyEdges[2][ed] collect (polyop.getFaceNormal theObj i)
 			vArr = for p in polyEdges[2][ed] collect (polyop.getFaceCenter theObj p)
 				newCoord = polyop.getVert theMesh newVert
 				faceCenter1 = vArr[1]
 				faceCenter2 = vArr[2]
-			center = bissect vArr[1] vArr[2] newCoord -- ***???
-			vArr = polyEdges[4][ed]
-				edgeEnd = vArr[1]
-				edgeCenterC = newCoord
-				Ncenter = lookForAngle edgeCenterC faceCenter1 faceCenter2 edgeEnd
-			polyop.setVert theMesh newVert Ncenter
-				newCoord = polyop.getVert theMesh newVert
-				format "Vert =  %\n" newVert
-				polyop.deleteVerts theMesh newVert
-			append vArr newCoord --
+			v1 = vectorsArr[1]; v2 = vectorsArr[2]; collinearTest = kollvectors v1 v2
+-- 				axisTest = equalAxis2 faceCenter1 faceCenter2
+			if collinearTest == true then 
+				(
+					vArr = polyEdges[4][ed]
+					format "edgeID = %\n" polyEdges[1][ed]
+					in coordsys meshPos polyop.moveVert theMesh newVert [0.0,0.0,-thicknes]
+					newCoord = polyop.getVert theMesh newVert
+					format " newCoord = %\n" newCoord
+					append vArr newCoord --
+					format "%\n" "Collinear Test is true"
+-- 					marker = false
+				) else 
+				(
+					vArr = polyEdges[4][ed]
+					edgeEnd = vArr[1]
+					Ncenter = lookForAngle newCoord faceCenter1 faceCenter2 edgeEnd
+					polyop.setVert theMesh newVert Ncenter
+					newCoord = polyop.getVert theMesh newVert
+					append vArr newCoord --
+-- 						marker = false
+						format "%\n" "Collinear Test is false"
+				)
+			polyop.deleteVerts theMesh newVert
+			format "newCoord = %\n vArr = %\n localPlane = %\n" newCoord vArr localPlane
 			localPlane = planerFn vArr
 			append plansArr localPlane
 				free faces
@@ -265,10 +298,12 @@ for i = 1 to faceCount do
 	backP = planerFn polygonVerts[2] 
 	backPlane = parraPlane backP newPoint
 	append plansArr backPlane
+-- 	format "plansArr = %\n" plansArr
 	newPointsArr = findIntersectionPoint plansArr
 	newFaceVertsArr = #()
 	fNum = polyop.getNumFaces theMesh
 	oldFaceVertsArr = polyop.getFaceVerts theMesh 1
+	if marker == false do exit with (format "%\n" "some exit string")
 	for i in newPointsArr do
 	(
 		v = polyop.createVert theMesh i
@@ -277,8 +312,15 @@ for i = 1 to faceCount do
 	newFaces = faceSort oldFaceVertsArr newFaceVertsArr
 	for i in newFaces do
 	(
-		polyop.createPolygon theMesh i
+		newFaceNum = polyop.createPolygon theMesh i
+		polyop.setFaceMatID theMesh newFaceNum 2
+		append facesArr newFaceNum
 	)
 	polyop.capHolesByVert theMesh newFaceVertsArr
+	lastFace = #{1..(polyop.getNumFaces theMesh)} - facesArr
+	polyop.setFaceMatID theMesh lastFace 3
 	appendIfUnique meshesArr theMesh
+	select meshesArr
+	selectionSets[baseName] = meshesArr
+	hide theObj
 )
