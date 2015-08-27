@@ -1,15 +1,15 @@
 theObj = $
 thicknes = 1.7
 baseName = theObj.name
-fn iniPos obj po = 
-(
-	faceNormal = in coordsys obj (polyop.getFaceNormal obj po) --get the face normal
-	worldUpVector = [0,0,1]
-	rightVector = normalize ( cross worldUpVector faceNormal)
-	upVector = normalize (cross rightVector faceNormal)
-	theMatrix = matrix3 rightVector upVector faceNormal (polyop.getFaceCenter obj po)
-	theMatrix
-)
+-- fn iniPos obj po = 
+-- (
+-- 	faceNormal = in coordsys obj (polyop.getFaceNormal obj po) --get the face normal
+-- 	worldUpVector = [0,0,1]
+-- 	rightVector = normalize ( cross worldUpVector faceNormal)
+-- 	upVector = normalize (cross rightVector faceNormal)
+-- 	theMatrix = matrix3 rightVector upVector faceNormal (polyop.getFaceCenter obj po)
+-- 	theMatrix
+-- )
 fn getVerts obj po =
 (
 	verts = polyop.getFaceVerts obj po
@@ -64,27 +64,6 @@ fn edgeCenter vArr =
 	xb = b.x; yb = b.y; zb = b.z;
 	xc = (xa+xb)/2; yc = (ya+yb)/2; zc = (za+zb)/2;
 	center = [xc,yc,zc]
-)
-fn findFuckingPoint c1 c2 c3 =
-	(
-		n = [c1.x-c2.x, c1.y-c2.y, c1.z-c2.z]
-		x1 = c3.x; y1 = c3.y; z1 = c3.z;
-		ux = n.x; uy = n.y; uz = n.z;
-		s1 = -ux*x1; s2 = -uy*y1; s3 = -uz*z1;
-		ss = s1 + s2 + s3
-		pli = #(ux, uy, uz, ss)
-		t1 = pli[1]^2; t2 = pli[2]^2; t3 = pli[3]^2
-		tt = t1 + t2 + t3
-		st1 = ux*c2.x; st2 = uy*c2.y; st3 = uz*c2.z;
-		stt = st1 + st2 + st3 + pli[4]
-		t0 = -stt/tt
-		x = ux*t0 + c2.x; y = uy*t0 + c2.y; z = uz*t0 + c2.z;
-		p = [x,y,z]
-	)
-fn findMidlePlane v c3 =
-(
-	D = v.x*(-c3.x)+v.y*(-c3.y)+v.z*(-c3.z)
-	#(v.x, v.y, v.z, D)
 )
 fn findIntersectionPoint plArr = 
 (
@@ -180,8 +159,8 @@ fn pointProjectionOnPlane po pl =
 	if plx == 0 then zn.x = 0
 	if ply == 0 then zn.y = 0
 	if plz == 0 then zn.z = 0
-	f1x =(-po.x*plx*zn.x); f1y = (-po.y*ply)*zn.y; f1z = (-po.z*plz)*zn.z;
-	f1 = pld - f1x - f1y - f1z
+	f1x = po.x*plx*zn.x; f1y = po.y*ply*zn.y; f1z = po.z*plz*zn.z;
+	f1 = pld + f1x + f1y + f1z
 	f2 = plx*plN.x + ply*plN.y +plz*plN.z
 	t = -f1/f2
 	x = t*plN.x-(-po.x); y = t*plN.y-(-po.y); z = t*plN.z-(-po.z);
