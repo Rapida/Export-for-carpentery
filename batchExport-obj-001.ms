@@ -1,18 +1,19 @@
 	filePath = maxFilePath	--find the name of component
 	pathArr = filterString filePath "\\"
 	partNum = pathArr[pathArr.count]	-- find the name of part
-	projectExportDir = GetDir #export + "\\" + pathArr[3] + "\\" + pathArr[4]
-	exportFilePath = projectExportDir + "\\" + partNum	-- export path
+	projectExportDir = GetDir #export + "\\" + pathArr[3] -- + "\\" + pathArr[4]
+	exportFilePath = projectExportDir + "\\" + "Nir-Desk"	-- export path
 -- 	stlPath = exportFilePath + "\\" + "STL"	-- create path for export stl
 -- 	format "stlPath = %\n" stlPath
-	format "objPath = \"%\"\n" objPath
+	format "objPath = \"%\"\n" exportFilePath
+	objPath = exportFilePath
 	fn exportPart _part _thicknes:1.7= 
 	(
 		_partName = _part.name
 		_nameArr = filterString _partName "-"
 		_objDir = _nameArr[1] + _nameArr[2]
 		_fileName = _nameArr[1]
-		objPath += ("\\" + _objDir)
+		objPath += ("\\")
 		_dir = makeDir objPath
 -- 		format "dir = %\n" _dir
 		for i = 2 to _nameArr.count-1 do _fileName += ("-" + _nameArr[i])
